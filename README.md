@@ -1,152 +1,146 @@
-# Efficient High-Dimensional Approximate Nearest Neighbor (ANN) Search
-**Manasvi Gangrade | Department of AI & Machine Learning, IIST Indore**
+# High-Dimensional Approximate Nearest Neighbor (ANN) Search
+**Department of AI & Machine Learning, Indore Institute of Science and Technology (IIST)**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![FAISS](https://img.shields.io/badge/FAISS-optimized-green.svg)](https://github.com/facebookresearch/faiss)
-
-A comprehensive implementation and evaluation framework for **Quantization-Based Approximate Nearest Neighbor (AKNN)** search. This repository brings together classical Product Quantization (PQ), graph-based indices (HNSW), and modern theoretical paradigms from the Nanyang Technological University (NTU) Vector Database group, providing a highly optimized environment for testing recall, search speed (QPS), and metadata-filtering.
+This repository contains the official implementation of the hybrid index framework combining **Product Quantization (PQ)**, **Random Bit Quantization (RaBitQ)**, and **Hierarchical Navigable Small World (HNSW)** graphs. The codebase serves as an experimental environment for evaluating similarity search recall, query throughput, memory compression, and metadata attribute-filtering on high-dimensional vectors.
 
 ---
 
-## 🚀 Core Architectural Contributions
+## Architectural Components
 
-This codebase implements four distinct components at the intersection of quantization theory and graph routing:
+The framework integrates four distinct algorithmic components targeting the memory-accuracy trade-off in vector search:
 
-| Architectural Component | File Location | Operational Mechanism |
+| Component | Modules | Description |
 | :--- | :--- | :--- |
-| **Learned PQ** | `src/learned_pq.py` | Embedding-aware quantization combining **PCA rotations** to de-correlate subspaces with **adaptive variance splitting** (reduces reconstruction error by **10–15%** on skewed distributions). |
-| **RaBitQ** | `src/learned_pq.py` | **Random Bit Quantization** (SIGMOD 2024 / TKDE) applying random orthogonal projections and 1-bit coordinate quantization ($\text{sign}(Px)$) to enable popcount distance estimation. |
-| **Hybrid HNSW+PQ** | `src/hnsw_pq_index.py` | A **two-stage search pipeline** that performs coarse traversal on HNSW using compressed PQ centroids (Stage 1), followed by exact Euclidean distance reranking on the top candidates (Stage 2). |
-| **Attribute Filtering** | `src/attribute_filter.py` | A **sub-indexing routing model** (inspired by *iRangeGraph*) that partitions data into range and categorical subgraphs, avoiding slow post-search filtering. |
+| **Learned PQ** | `src/learned_pq.py` | Embedding-aware quantization applying a learned PCA rotation to de-correlate subspaces, paired with adaptive variance-based subspace allocation. |
+| **RaBitQ** | `src/learned_pq.py` | Random Bit Quantization (SIGMOD 2024 / TKDE) that projects normalized vectors onto a random orthogonal basis and compresses each coordinate to a single bit ($\text{sign}(Px)$), facilitating popcount distance computation. |
+| **Hybrid HNSW+PQ** | `src/hnsw_pq_index.py` | A two-stage index that performs navigable search on an HNSW graph using reconstructed PQ distances, followed by exact Euclidean distance reranking on the top candidates. |
+| **Attribute Filtering** | `src/attribute_filter.py` | A partitioned sub-indexing architecture (inspired by the *iRangeGraph* paradigm) designed to resolve hybrid predicate-vector queries without the recall collapse of post-filtering. |
 
 ---
 
-## 📂 Project Structure
+## Repository Structure
 
-```bash
+```
 Similarity Search Code/
-├── main.py                  # Pipeline runner (runs all benchmarks)
-├── requirements.txt         # OS-independent dependencies
-├── .gitignore               # Excludes datasets, logs, venv, and cache files
+├── main.py                  # Entry point for the full evaluation pipeline
+├── requirements.txt         # Package dependencies
+├── .gitignore               # Excludes virtual environments, datasets, and local outputs
 ├── src/
-│   ├── data_loader.py       # Mimics real SIFT/BERT/e-commerce data distributions
-│   ├── learned_pq.py        # Quantizer engines (StandardPQ, LearnedPQ, RaBitQ)
-│   ├── hnsw_pq_index.py     # Graph wrapper, Exact, IVF, and Hybrid PQ-HNSW indices
-│   ├── attribute_filter.py  # Metadata predicate routing (Sub-index vs Post-filter)
-│   ├── evaluate.py          # Benchmark setups for all 6 experiments
-│   └── plot_results.py      # Matplotlib generator for publication plots
-└── results/                 # [Generated] Saved plots, log transcripts, and JSON output
+│   ├── data_loader.py       # Generators for synthetic and correlated datasets
+│   ├── learned_pq.py        # Quantization models (StandardPQ, LearnedPQ, RaBitQ)
+│   ├── hnsw_pq_index.py     # Graph-hybrid index classes and baseline wrappers
+│   ├── attribute_filter.py  # Range and categorical attribute filtering index
+│   ├── evaluate.py          # Benchmark scripts for all 6 experiments
+│   └── plot_results.py      # Plotting scripts for publication figures
+└── results/                 # Destination for plots, transcripts, and raw results
 ```
 
 ---
 
-## 🛠️ Getting Started
+## Setup and Installation
 
-### 1. Installation
-The code is tested on Windows and Unix environments. Start by installing the requirements:
+### 1. Requirements Installation
+To install the dependencies, execute:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Execution Options
+### 2. Execution Modes
 
-* **Quick Validation Run** (runs in ~1-2 mins on a lightweight mock dataset):
+* **Quick Execution Mode** (Runs on small sample sizes for verification in under 2 minutes):
   ```bash
   python main.py --quick
   ```
-  
-* **Full Benchmark Suite** (runs in ~10-15 mins on large, complex distributions):
+
+* **Full Evaluation Mode** (Runs on full benchmark sizes to generate final publication metrics):
   ```bash
   python main.py
   ```
 
 ---
 
-## 📊 Evaluation & Experiments
+## Experimental Suite
 
-The pipeline automatically runs **6 distinct experiments** and saves the outputs:
+The framework automatically evaluates the following six parameters:
 
-### 🔬 [Exp 1] PQ Reconstruction Error
-Compares the $L_2$ distortion rate of Standard PQ vs. Learned PQ across sub-vectors $m \in \{4, 8, 16\}$.
-* **Mathematical Insight**: Because real-world embeddings exhibit skewed coordinate variances, Learned PQ uses PCA de-correlation and variance-based subspace allocation to decrease quantization error.
+### Experiment 1: Quantization Reconstruction Error
+Compares the average $L_2$ reconstruction error of Standard PQ against Learned PQ across codebook sizes $m \in \{4, 8, 16\}$. Learned PQ leverages the PCA-rotated, non-isotropic variance distribution of the dataset to achieve lower distortion.
 
-### ⏱️ [Exp 2] Recall@10 vs. QPS Trade-off
-Benchmarks search throughput (Queries Per Second) against query accuracy (Recall@10). Evaluates Exact search, Pure HNSW, IVF-PQ, Standard Hybrid HNSW-PQ, and our **Learned Hybrid HNSW-PQ**.
+### Experiment 2: Recall@10 vs. QPS Trade-off
+Benchmarks queries-per-second (QPS) against accuracy (Recall@10). The baseline methods (Exact Search, Pure HNSW, and IVF-PQ) are evaluated alongside Standard and Learned Hybrid HNSW-PQ configurations.
 
-### 🏷️ [Exp 3] Attribute-Predicate Filtering
-Compares Sub-Index Query Routing (inspired by *iRangeGraph*) against Naive Post-Filtering. It measures query latency speedup across categorical and numeric price range queries.
+### Experiment 3: Predicate Attribute-Filtering
+Evaluates routing performance on queries containing scalar metadata constraints (e.g., categorical match and range filters). Compares partitioned sub-indexing against naive post-filtering.
 
-### 🧬 [Exp 4] High-Dimensional Scalability (BERT-like 768d)
-Scales dimensions up to 768 to simulate modern LLM semantic embeddings, verifying index resilience against the curse of dimensionality.
+### Experiment 4: High-Dimensional Scalability
+Evaluates indexing efficiency and search recall on high-dimensional vectors ($d=768$) to simulate workloads involving dense transformer-based sentence embeddings (e.g., BERT/RoBERTa).
 
-### 🎛️ [Exp 5] Ablation Study (Rerank Factor $\alpha$)
-Measures the trade-offs of the stage-2 reranking candidate multiplier ($\alpha \in [1, 50]$) to find the optimal sweet spot between exact distance computations and graph retrieval.
+### Experiment 5: Ablation Study on Reranking Factor ($\alpha$)
+Measures the effect of the reranking candidate pool size ($\alpha$) on recall and query throughput. Setting $\alpha \in [1, 50]$ identifies the optimal transition point between stage-1 graph routing and stage-2 full-precision verification.
 
-### 🔄 [Exp 6] Dynamic Index Updates (Insertions & Deletions)
-Evaluates dynamic index modifications under streaming workloads:
-* **Dynamic Inserts**: Adds incoming vectors using the pre-trained codebook.
-* **Tombstone Deletions**: Deletes vectors instantly using a soft-deletion lookup table, ensuring deleted vector IDs are never returned in search queries.
+### Experiment 6: Dynamic Index Maintenance
+Evaluates streaming write/delete workloads on the index:
+* **Dynamic Additions**: Encodes and appends new vectors into the HNSW graph using the pre-trained PQ codebooks.
+* **Tombstone Deletions**: Flags removed vectors in a hash table to guarantee deleted indices are immediately filtered out from query search results.
 
 ---
 
-## 💾 Output Artifacts & Reports
+## Automated Output and Metrics Logging
 
-Every run automatically writes logs and assets to the `./results/` folder:
-1. **`results/benchmark_log.txt`**: A clean, line-by-line mirror transcript of everything printed to the console (including ASCII tables, time measurements, and progress updates).
-2. **`results/raw_results.json`**: Complete structured numeric outcomes of all experiments in standard JSON format.
-3. **Matplotlib Figures** (saved as PNGs for LaTeX insertion):
-   * `fig1_recall_qps.png`: Recall-throughput trade-off curves.
+All runs generate formatted metrics inside the `./results/` directory:
+1. **`results/benchmark_log.txt`**: Complete textual transcript of the execution, containing formatted ASCII tables, build times, and evaluation logs.
+2. **`results/raw_results.json`**: Structured JSON format containing the raw numerical points of the runs for external analysis.
+3. **Publication-Ready Figures** (Matplotlib PNG outputs):
+   * `fig1_recall_qps.png`: Throughput vs. Recall curves.
    * `fig2_reconstruction.png`: Reconstruction distortion comparisons.
-   * `fig3_filtering.png`: Sub-index routing vs. post-filtering latency.
-   * `fig4_ablation.png`: Ablation curves for rerank factor $\alpha$.
-   * `fig5_memory.png`: RAM consumption bar charts.
+   * `fig3_filtering.png`: Sub-index routing vs. post-filtering query latency.
+   * `fig4_ablation.png`: Reranking factor ($\alpha$) ablation curves.
+   * `fig5_memory.png`: RAM footprint comparison.
 
 ---
 
-## 💡 Code Snippets (API Usage)
+## API Reference and Examples
 
-### Training & Quantizing with Learned PQ:
+### Quantizing Vectors with Learned PQ
 ```python
 from src.learned_pq import LearnedPQ
 
-# Initialize with 8 subvectors (each 16 bytes for 128-d)
+# Initialize Learned Product Quantization with 8 subvectors
 lpq = LearnedPQ(m=8, K=256, use_rotation=True, adaptive_split=True)
 lpq.train(X_train)
 
-# Compress and Decompress
-compressed_codes = lpq.encode(X_test)
-reconstructed_X = lpq.decode(compressed_codes)
+# Encode to codes (n, m) and decode back to original space
+codes = lpq.encode(X_test)
+X_reconstructed = lpq.decode(codes)
 ```
 
-### Initializing the Hybrid Graph Index:
+### Creating and Searching the Hybrid Index
 ```python
 from src.hnsw_pq_index import HybridPQHNSW
 
-# Build HNSW graph on PQ-reconstructed vectors
+# Initialize HNSW index built on PQ-reconstructed vectors
 index = HybridPQHNSW(d=128, m=8, K=256, M=32, rerank_factor=10, use_learned_pq=True)
 index.build(X_database)
 
-# Perform fast 2-stage search
+# Perform 2-stage search
 distances, indices = index.search(X_queries, k=10)
 ```
 
-### Querying with Metadata Filters:
+### Partitioned Attribute-Filtering Search
 ```python
 from src.attribute_filter import AttributeFilteredIndex
 
 index = AttributeFilteredIndex(d=128)
-index.add(vectors, attributes)  # attributes = [{'category': 'books', 'price': 450}, ...]
+index.add(vectors, attributes)  # attributes = [{'category': 'books', 'price': 300}, ...]
 
-# Sub-index routing occurs automatically
-results, latency = index.search(query_vec, k=10, category='books', max_price=1000)
+# Routes query directly to category sub-index
+results, latency = index.search(query_vec, k=10, category='books', max_price=500)
 ```
 
 ---
 
-## 📚 Academic Context & References
+## Academic References
 
-This implementation maps directly to the following publications:
-1. **Product Quantization**: *Jégou et al., "Product Quantization for Nearest Neighbor Search", IEEE TPAMI 2011.*
-2. **HNSW**: *Malkov & Yashunin, "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs", IEEE TPAMI 2020.*
-3. **RaBitQ & SymphonyQG**: *Gao & Long, "RaBitQ: Quantizing high-dimensional vectors with a theoretical error bound", ACM SIGMOD 2024 / IEEE TKDE.*
+* Jégou, H., Douze, M., & Schmid, C. (2011). Product Quantization for Nearest Neighbor Search. *IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)*.
+* Malkov, Y. A., & Yashunin, D. A. (2020). Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs. *IEEE TPAMI*.
+* Gao, J., & Long, C. (2024). RaBitQ: Quantizing High-Dimensional Vectors with a Theoretical Error Bound for Approximate Nearest Neighbor Search. *ACM SIGMOD*.
