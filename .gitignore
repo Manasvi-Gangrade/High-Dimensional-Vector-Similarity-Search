@@ -1,0 +1,29 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+include/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local Dataset (Downloads can be large)
+data/
+
+# Local Experiment Results & Logs
+results/
+
+# Editor / OS Settings
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
